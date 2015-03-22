@@ -5,22 +5,21 @@
 particleA_Num <- 200
 AssocA <- 0.0
 DissA <- 1.0
-ParticleB_Num <- 200
+particleB_Num <- 200
 AssocB <- 0.0
 DissB <- 1.0
 collisionProb <- 0.3
 Matrix_X <- 200
 Matrix_Y <- 200
 
-timeSeriesLst <- c(5,10,15,20,30,40,60,80,100,120,150,200) # each value is the step number for an individual collision experiment. The
-# particle collisions versus the times will ne plotted. 
+timeSeriesLst <- c(10,20,30,40,60,80,100,120,150,200,250,300) # each value is the step number for an individual collision experiment. 
+# The particle collisions versus the times will ne plotted. 
 
 dataSetC <- 1:length(timeSeriesLst)
 directionPaths <- 8
 directionLst <- 1:8
 stepVectorX <- c(0,1,1,1,0,-1,-1,-1)
 stepVectorY <- c(1,1,0,-1,-1,-1,0,1) # movment in x and y for movment direction value
-
 
 # create a matrix of data for the diffusing particles with each row a different particle: 1st & 2nd columns are the X & Y positions, 3rd column is the movment direction, 
 # and the 3rd column is a single number representing the location. The 4th & 5th are the association probability and dissociation probability
@@ -33,7 +32,6 @@ locationCalc <- function(x,y){(x-1)*Matrix_Y+y}
 
 cntr <- 1 
 for (stepNumber in timeSeriesLst) {
-
   # first create and define a random distribution of particles, A and B, in the grid
   ParticleA_Set[,1] <- sample.int(Matrix_X, size=particleA_Num, replace = TRUE, prob = NULL)
   ParticleA_Set[,2] <- sample.int(Matrix_Y, size=particleA_Num, replace = TRUE, prob = NULL)
@@ -44,13 +42,13 @@ for (stepNumber in timeSeriesLst) {
 
   ParticleB_Set[,1] <- sample.int(Matrix_X, size=particleB_Num, replace = TRUE, prob = NULL)
   ParticleB_Set[,2] <- sample.int(Matrix_Y, size=particleB_Num, replace = TRUE, prob = NULL)
-  ParticleB_Set[,3] <- locationCalc(ParticleB_Set[,1],ParticleB_Set[,2])}
+  ParticleB_Set[,3] <- locationCalc(ParticleB_Set[,1],ParticleB_Set[,2])
   ParticleB_Set[,4] <- AssocB
   ParticleB_Set[,5] <- DissB
   ParticleB_Set[,6] <- sample.int(directionPaths, size = particleB_Num, replace = TRUE, prob = NULL)
 
 # calculate the collisions of the initial setup
-  dataSetC[cntr]<-length(intersection(particleA_Set[,3],particleB_Set[,3]))*collisionProb
+  dataSetC[cntr]<-length(intersect(ParticleA_Set[,3],ParticleB_Set[,3]))*collisionProb
   
 for (j in 1:stepNumber){
     
@@ -86,9 +84,20 @@ for (j in 1:stepNumber){
   ParticleB_Set[,6] <- sample.int(directionPaths, size = particleB_Num, replace = TRUE, prob = NULL)
   
   # calculate the number of collisions for the last step
-  dataSetC[cntr]<-dataSetC[cntr]+length(intersection(particleA_Set[,3],particleB_Set[,3]))*collisionProb
+  dataSetC[cntr]<-dataSetC[cntr]+length(intersect(ParticleA_Set[,3],ParticleB_Set[,3]))*collisionProb
 
   } # end of stepNumber iterations 
 
 cntr <- cntr+1
-}
+} # end of timeSeriesLst
+
+plot(timeSeriesLst,dataSetC, main = "Time vs Collisions ", xlab = "Time (Cycles)", ylab ="Collisions")
+if (length(dataSetC) > 2){
+  fit = nls(dataSetC ~ p1 + p2*timeSeriesLst, start = list(p1 = 0.1, p2 = 1.0))
+  newt = data.frame(timeSeriesLst = seq(min(timeSeriesLst),max(timeSeriesLst),len=200))
+  lines(newt$timeSeriesLst,predict(fit,newdata=newt))
+  dataFitS <- matrix(summary(fit)[[10]])
+  xLpos <- (max(timeSeriesLst) + min(timeSeriesLst))/1.5
+  yLpos <- (max(dataSetC) + min(dataSetC))/4
+  text(xLpos,yLpos*.8, labels = sprintf("slope = %5.3f",dataFitS[2,]))
+  text(xLpos,yLpos*.6, labels = sprintf("y-intert = %5.3f",dataFitS[1,]))}
